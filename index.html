@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="description" content="石页建筑的项目与空间研究。浏览建筑模型及已接入的项目详情。">
+  <title>石页建筑 — 建筑模型展厅</title>
+  <link rel="icon" href="assets/favicon-shi-94495b4fffe8.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css?v=ac173a3774e4">
+  <link rel="stylesheet" href="close-controls.css?v=8c3aa517f197">
+  <link rel="stylesheet" href="typography.css?v=f5aa5eadf94d">
+  <link id="home-layout" rel="stylesheet" href="home-layout.css?v=1e84e0fc3db9">
+  <script type="importmap">{"imports":{"three":"./vendor/three.module.min.js","./home-viewer.js":"./home-viewer.js?v=ad8243d04241","./home-models.js":"./home-models.js?v=00a0422db23a","./home-scene.js":"./home-scene.js?v=8cd8dd2b2c7f","./about-content.js":"./about-content.js?v=3a5490882178","./project-content.js":"./project-content.js?v=303d6cc6800c"}}</script>
+  <script src="app.js?v=3a0ecaaf2158" type="module"></script>
+</head>
+<body data-page="home">
+  <a class="skip-link" href="#main-content">跳至正文</a>
+  <header class="site-header">
+    <a class="wordmark" href="#home" aria-label="shiye architects · 石页建筑，返回首页">
+      <img class="wordmark-en" src="assets/brand/shiye-wordmark-en-ink-449418734283.svg" alt="" width="228" height="28" decoding="sync">
+      <img class="wordmark-zh" src="assets/brand/shiye-wordmark-zh-ink-adb33b7a0f4b.svg" alt="" width="102" height="12" decoding="sync">
+    </a>
+    <nav class="navigation" aria-label="主导航">
+      <a class="nav-link" href="#projects" data-i18n="project">项目</a>
+      <a class="nav-link" href="#about" data-i18n="about">关于</a>
+      <a class="nav-link" href="#journal" data-i18n="journal">日志</a>
+      <a class="nav-link" href="#news" data-i18n="news">新闻</a>
+      <button class="language-button" id="language-toggle" type="button" aria-label="Switch to English">EN</button>
+    </nav>
+  </header>
+
+  <main id="main-content" tabindex="-1">
+    <section class="home-gallery" aria-labelledby="home-heading" hidden>
+      <h1 class="sr-only" id="home-heading" data-i18n="heading">建筑模型展厅</h1>
+      <div class="home-models">
+        <div class="model-grid" id="model-grid"></div>
+      </div>
+      <div class="home-gallery-divider" aria-hidden="true"></div>
+    </section>
+    <section class="content-page projects-page" id="projects-page" hidden aria-labelledby="projects-heading">
+      <div class="project-nav-bar" hidden></div>
+      <div class="project-content">
+        <div class="project-catalog">
+          <aside class="project-directory">
+            <header class="page-heading project-directory-heading">
+              <span class="eyebrow" data-i18n="projectsEyebrow">目录</span>
+              <h2 id="projects-heading" data-i18n="projectsHeading">项目</h2>
+            </header>
+            <div class="project-index-scroll">
+              <div class="project-index-grid" id="project-index-grid" role="group" aria-label="项目目录"></div>
+            </div>
+          </aside>
+          <div class="project-plates">
+            <figure class="project-feature" id="project-feature">
+              <button class="project-feature-open" id="project-feature-open" type="button" data-index="0" aria-haspopup="dialog">
+                <img id="project-feature-image" alt="" decoding="async" width="1080" height="1440">
+              </button>
+              <figcaption class="project-plate-caption">
+                <span class="project-plate-number" id="project-feature-number">01</span>
+                <div class="project-plate-description"><span class="project-plate-title" id="project-feature-title"></span><span class="project-plate-meta" id="project-feature-meta"></span></div>
+                <button class="text-link project-plate-details" id="project-feature-details" type="button">项目详情 ↗</button>
+              </figcaption>
+            </figure>
+            <div class="project-image-sequence" id="project-image-sequence" hidden></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <article class="content-page about-page" id="about-page" hidden aria-labelledby="about-heading">
+      <div class="about-practice">
+        <figure class="about-craft"><img id="about-craft" decoding="async" alt=""></figure>
+        <div class="about-practice-intro">
+          <h1 class="about-heading" id="about-heading"></h1>
+          <div class="about-prose" id="about-practice-copy"></div>
+        </div>
+      </div>
+      <div class="about-prose about-practice-notes" id="about-practice-notes"></div>
+      <section class="about-founder" aria-labelledby="about-founder-name">
+        <div class="about-founder-copy"><h2 id="about-founder-name"></h2><p class="about-role" id="about-founder-role"></p><div class="about-prose" id="about-biography"></div></div>
+        <figure class="about-portrait"><img id="about-portrait" loading="lazy" decoding="async" alt=""></figure>
+      </section>
+      <section class="about-contact" id="about-contact" aria-label="联系">
+        <div class="about-prose" id="about-contact-intro"></div>
+        <ul class="about-contact-list" role="list">
+          <li>
+            <a href="mailto:contact@shiyearchitects.com">
+              <img src="assets/about/contact-mail.svg?v=41a32c1e1f5d" width="18" height="18" alt="">
+              <span class="contact-link-text">contact@shiyearchitects.com</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://www.instagram.com/shiyearch/" target="_blank" rel="noopener noreferrer">
+              <img src="assets/about/contact-instagram.svg?v=a0f406506edd" width="18" height="18" alt="">
+              <span class="contact-link-text"><span class="sr-only">Instagram </span>@shiyearch <span aria-hidden="true">↗</span></span>
+            </a>
+          </li>
+          <li>
+            <a href="https://www.xiaohongshu.com/user/profile/5ae1fa5f4eacab08720bfac8" target="_blank" rel="noopener noreferrer">
+              <img class="contact-wordmark" src="assets/about/contact-xiaohongshu.svg?v=1964f8bb4ea7" width="34" height="34" alt="">
+              <span class="contact-link-text"><span class="sr-only" data-about-label="rednoteLabel">小红书</span> 石页建筑 ShiyeArchitects <span aria-hidden="true">↗</span></span>
+            </a>
+          </li>
+        </ul>
+      </section>
+    </article>
+    <section class="content-page journal-page" id="journal-page" hidden aria-labelledby="journal-heading">
+      <header class="page-heading"><h1 id="journal-heading" data-i18n="journalHeading">日志</h1></header>
+      <p class="journal-empty" data-i18n="journalEmpty">内容整理中。</p>
+    </section>
+    <section class="content-page news-page" id="news-page" hidden aria-labelledby="news-heading">
+      <header class="page-heading"><h1 id="news-heading" data-i18n="newsHeading">新闻</h1></header>
+      <p class="journal-empty" data-i18n="newsEmpty">内容整理中。</p>
+    </section>
+    <section class="content-page contact-page" id="contact-page" hidden aria-labelledby="contact-heading">
+      <header class="page-heading"><span class="eyebrow" data-i18n="contactEyebrow">交流与合作</span><h1 id="contact-heading" data-i18n="contactHeading">联系</h1></header>
+      <div class="about-prose contact-page-intro" id="contact-page-intro"></div>
+      <dl class="contact-methods">
+        <div><dt data-about-label="emailLabel"></dt><dd><a class="contact-email" href="mailto:contact@shiyearchitects.com">contact@shiyearchitects.com</a></dd></div>
+        <div><dt data-about-label="instagramLabel"></dt><dd>shiyearch</dd></div>
+        <div><dt data-about-label="rednoteLabel"></dt><dd>石页建筑 ShiyeArchitects</dd></div>
+      </dl>
+    </section>
+  <noscript><p class="no-script">石页建筑模型展厅需要 JavaScript。Please enable JavaScript to explore the models.</p></noscript>
+  </main>
+
+  <dialog class="project-dialog" id="project-dialog" aria-labelledby="project-title">
+    <div class="project-dialog-close">
+      <button type="button" class="close-button" data-close="project-dialog" aria-label="关闭"><span aria-hidden="true">×</span></button>
+    </div>
+    <div class="detail-layout">
+      <figure class="detail-photo" id="detail-photo" hidden>
+        <div class="detail-photo-stage">
+          <button class="detail-photo-zoom" id="detail-photo-zoom" type="button" aria-label="放大照片" aria-describedby="detail-photo-status" aria-haspopup="dialog">
+            <img id="detail-photo-image" alt="" decoding="async">
+          </button>
+          <div class="detail-photo-arrows" id="detail-photo-arrows">
+            <button class="photo-arrow photo-arrow-previous detail-photo-arrow" type="button" id="detail-photo-left" aria-label="上一张照片"><span class="photo-arrow-icon" aria-hidden="true"></span></button>
+            <button class="photo-arrow detail-photo-arrow" type="button" id="detail-photo-right" aria-label="下一张照片"><span class="photo-arrow-icon" aria-hidden="true"></span></button>
+          </div>
+        </div>
+        <div class="detail-photo-thumbnails" id="detail-photo-thumbnails" role="group" aria-label="照片缩略图"></div>
+        <span class="sr-only" id="detail-photo-status" role="status"></span>
+        <figcaption class="sr-only" id="detail-photo-credit"></figcaption>
+      </figure>
+      <div class="detail-visual" id="detail-model">
+        <span class="detail-eyebrow" data-i18n="modelLabel">体量 / 空间</span>
+        <div class="model-stage detail-stage" id="detail-stage" tabindex="0" role="img" aria-label="建筑模型，左右拖动或按方向键转动">
+          <div class="model-object">
+            <img class="model-poster" id="detail-poster" alt="" width="640" height="640">
+          </div>
+        </div>
+        <div class="model-controls"><button type="button" id="turn-left" aria-label="向左转动模型">←</button><button type="button" class="motion-button" id="motion-toggle" aria-pressed="false" disabled>暂停转动</button><button type="button" id="turn-right" aria-label="向右转动模型">→</button></div>
+        <button type="button" class="light-button" id="light-toggle" aria-pressed="true" disabled>关闭灯光</button>
+        <p class="detail-status" id="detail-status" role="status"></p>
+      </div>
+      <div class="detail-copy">
+        <span class="eyebrow" id="detail-index">示例 01</span>
+        <h2 id="project-title"></h2>
+        <p class="detail-subtitle" id="project-subtitle"></p>
+        <div class="detail-rule"></div>
+        <div class="detail-description" id="project-description"></div>
+        <dl class="project-meta" id="project-facts"></dl>
+        <a class="text-link detail-full-link" id="project-full-link" hidden>项目详情 ↗</a>
+        <p class="demo-disclaimer" data-i18n="disclaimer">项目名称及信息均为示例。</p>
+        <div class="detail-pagination">
+          <button type="button" id="previous-project"><span aria-hidden="true">←</span><span data-i18n="previous">上一个</span></button>
+          <button type="button" id="next-project"><span data-i18n="next">下一个</span><span aria-hidden="true">→</span></button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+  <dialog class="photo-preview" id="photo-preview" aria-label="照片预览">
+    <span class="photo-preview-count" id="photo-preview-count" role="status"></span>
+    <button class="close-button photo-preview-close" type="button" data-close="photo-preview" aria-label="关闭" autofocus><span aria-hidden="true">×</span></button>
+    <button class="photo-arrow photo-arrow-previous photo-preview-arrow" id="photo-preview-left" type="button" aria-label="上一张照片"><span class="photo-arrow-icon" aria-hidden="true"></span></button>
+    <img id="photo-preview-image" alt="" decoding="async">
+    <button class="photo-arrow photo-preview-arrow" id="photo-preview-right" type="button" aria-label="下一张照片"><span class="photo-arrow-icon" aria-hidden="true"></span></button>
+  </dialog>
+
+</body>
+</html>

@@ -1,0 +1,18 @@
+/* Shared close appearance from the accepted project preview.
+   New detail pages should reuse this stylesheet; layout and hit area stay local. */
+.close-button,.reader-actions .reader-close,.zoom-toolbar .zoom-close{
+  font:200 27px var(--sans);
+  color:var(--close-color,#424a44);
+  background:transparent;
+  text-decoration:none;
+  transition:transform .2s;
+}
+.close-button:hover,.reader-actions .reader-close:hover,.zoom-toolbar .zoom-close:hover{
+  background:transparent;
+  text-decoration:none;
+  transform:rotate(90deg);
+}
+.close-button:focus-visible,.reader-actions .reader-close:focus-visible,.zoom-toolbar .zoom-close:focus-visible{
+  outline:none;
+  font-weight:700;
+}

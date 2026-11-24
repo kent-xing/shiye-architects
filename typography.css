@@ -1,0 +1,100 @@
+@font-face {
+  font-family: "EB Garamond";
+  src: url("assets/fonts/eb-garamond-regular-latin-fcb1ddc47671.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+:root {
+  --english-serif: "EB Garamond", Georgia, serif;
+  --reading-font: "PingFang SC", "Noto Sans CJK SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+}
+
+:root:lang(en) {
+  --reading-font: var(--english-serif);
+}
+
+.caption-title,
+.project-index-title,
+.project-plate-title,
+#project-title,
+.detail-description,
+.page-heading :is(h1, h2),
+.about-heading,
+.about-founder h2,
+.about-prose,
+.reader-heading h1 {
+  font-family: var(--reading-font);
+}
+
+.caption-title,
+.project-index-card[aria-current="true"] .project-index-title,
+#project-title,
+.reader-heading h1 {
+  font-weight: 400;
+}
+
+.page-heading :is(h1, h2):lang(en),
+.about-heading:lang(en),
+.about-founder h2:lang(en) {
+  font-weight: 400;
+  letter-spacing: normal;
+}
+
+.reader-heading p:lang(en) {
+  font-family: var(--english-serif);
+}
+
+.caption-title:lang(zh),
+#project-title:lang(zh),
+.reader-heading h1:lang(zh) {
+  letter-spacing: normal;
+}
+
+#project-title {
+  text-wrap: balance;
+}
+
+.detail-description:lang(zh) {
+  font-size: .9375rem;
+  line-height: 1.6;
+  color: #2c2b31;
+}
+
+.detail-description:lang(zh) p + p {
+  margin-top: 1.6em;
+}
+
+#project-title:lang(en) {
+  font-size: clamp(1.625rem, 3.3vw, 2.125rem);
+  letter-spacing: -.015em;
+}
+
+.detail-description:lang(en),
+.about-practice-intro .about-prose:lang(en),
+.about-practice-notes:lang(en),
+.about-founder-copy .about-prose:lang(en) {
+  font-size: 1.0625rem;
+}
+
+.detail-description:lang(en) {
+  line-height: 1.55;
+}
+
+.about-prose:lang(en) {
+  line-height: 1.6;
+}
+
+.about-contact > .about-prose:lang(en) {
+  font-size: 1rem;
+}
+
+@media (max-width: 360px) {
+  #project-dialog:lang(en) .detail-copy {
+    padding-inline: 20px;
+  }
+
+  #project-title:lang(en) {
+    font-size: 1.5rem;
+  }
+}
