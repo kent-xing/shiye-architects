@@ -361,10 +361,19 @@ body.is-inner.is-about main{padding-top:0}
   .about-contact-list img{justify-self:center}
 }
 @media(max-width:760px){
-  .about-practice{--craft-height:max(120px,100svh - 200px);grid-template-columns:1fr;gap:30px;padding-block:24px 44px}
-  .about-craft{max-width:460px}
-  .about-founder{grid-template-columns:1fr;gap:28px;margin-top:44px;padding:38px 0}
-  .about-portrait{width:min(64%,250px)}
+  .about-page{max-width:28rem;margin-inline:auto}
+  .about-practice{
+    --craft-height:clamp(170px,40svh,318px);
+    grid-template-columns:minmax(0,1fr);
+    min-height:0;
+    gap:20px;
+    padding-block:12px 36px;
+  }
+  .about-craft{justify-self:center;max-width:100%}
+  .about-heading{margin-bottom:12px}
+  .about-founder{grid-template-columns:1fr;gap:22px;margin-top:36px;padding:32px 0}
+  .about-role{margin-bottom:20px}
+  .about-portrait{justify-self:center;width:min(64%,250px)}
   .about-contact{grid-template-columns:1fr;gap:24px;padding-top:30px}
 }
 
