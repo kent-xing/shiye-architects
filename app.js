@@ -679,16 +679,26 @@ function openProject(index, trigger){
   abortWarmModel();
   deactivate(true);
   if(!projectDialog.open){
+    projectDialog.classList.remove('is-closing');
     projectOpener = trigger;
     projectClosedByPointer = false;
     projectDialog.showModal();
   }
   document.body.classList.add('has-dialog');loadDetail(index);
 }
-function closeProject(event) {
+async function closeProject(event) {
+  if (!projectDialog.open || projectDialog.classList.contains('is-closing')) return;
   projectClosedByPointer = event.detail > 0;
-  projectDialog.close();
+  projectDialog.classList.add('is-closing');
+  // Keep the dialog and its backdrop in the top layer through the fade.
+  const fade = projectDialog.getAnimations().find(animation => animation.transitionProperty === 'opacity');
+  if (fade) await fade.finished.catch(() => {});
+  if (projectDialog.open && projectDialog.classList.contains('is-closing')) projectDialog.close();
 }
+projectDialog.addEventListener('cancel', event => {
+  event.preventDefault();
+  void closeProject(event);
+});
 projectFullLink.addEventListener('click', () => {
   const asset = projectAssetForIndex(detailIndex);
   const openerKind = ['project-feature-open', 'project-feature-details', 'project-plate-open', 'project-index-card'].find(kind => projectOpener?.classList.contains(kind)) ?? 'model-card';
@@ -703,6 +713,7 @@ projectFullLink.addEventListener('click', () => {
 });
 projectDialog.addEventListener('close',()=>{
   if(projectDialog.open)return;
+  projectDialog.classList.remove('is-closing');
   deactivate(true);stopModel(true);detailState='idle';document.body.classList.remove('has-dialog');
   const opener = projectOpener;
   projectOpener = null;
@@ -724,6 +735,7 @@ projectDialog.addEventListener('close',()=>{
 document.querySelector('#previous-project').addEventListener('click',()=>loadDetail(detailIndex-1));
 document.querySelector('#next-project').addEventListener('click',()=>loadDetail(detailIndex+1));
 detailPhotoZoom.addEventListener('click', () => {
+  if (projectDialog.classList.contains('is-closing')) return;
   renderPhotoPreview(projectContent[projectAssetForIndex(detailIndex)].photos);
   photoPreview.showModal();
 });

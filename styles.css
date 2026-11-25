@@ -53,6 +53,34 @@ body.has-dialog{overflow:hidden}
 dialog{border:1px solid rgba(95,104,94,.18);padding:0;color:var(--ink);background-color:var(--stone-ground);background-image:var(--stone-image);background-position:center;background-size:cover;background-repeat:no-repeat;box-shadow:0 24px 100px rgba(40,48,40,.14)}
 dialog::backdrop{background:rgba(44,51,44,.24);backdrop-filter:blur(5px)}
 .project-dialog{width:min(1080px,90vw);max-width:none;max-height:90svh;overflow:auto}
+.project-dialog.is-closing{pointer-events:none}
+@media (prefers-reduced-motion: no-preference) {
+  .project-dialog[open],
+  .project-dialog[open]::backdrop{
+    opacity:1;
+    transition:opacity 220ms ease-out;
+  }
+  .project-dialog[open] .detail-copy{
+    animation:project-copy-reveal 170ms ease-out 50ms backwards;
+  }
+  .project-dialog[open].is-closing,
+  .project-dialog[open].is-closing::backdrop{
+    opacity:0;
+    transition-duration:150ms;
+    transition-timing-function:ease-in;
+  }
+  .project-dialog[open].is-closing .detail-copy{
+    animation-play-state:paused;
+  }
+  @starting-style {
+    .project-dialog[open]:not(.is-closing),
+    .project-dialog[open]:not(.is-closing)::backdrop{opacity:0}
+  }
+  @keyframes project-copy-reveal {
+    from{opacity:0}
+    to{opacity:1}
+  }
+}
 .close-button{position:absolute;top:17px;right:19px;width:34px;height:34px;z-index:2}
 .detail-layout{display:grid;grid-template-columns:56% 44%;min-height:570px}
 .detail-visual{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:58px 18px 40px}
