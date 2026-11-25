@@ -146,3 +146,13 @@ export const HOME_MODELS = Object.freeze([
     "initialAngle": 2.9321531433504737
   }
 ].map(model => Object.freeze({...model, target: Object.freeze(model.target)})));
+
+export async function fetchModelData(config, {signal, priority} = {}) {
+  const response = await fetch(new URL(config.source, import.meta.url), {signal, priority});
+  if (!response.ok) throw new Error(`Model request failed: HTTP ${response.status}`);
+  return response.arrayBuffer();
+}
+
+export function importModelLighting(config) {
+  return import(new URL(config.lightingModule, import.meta.url).href);
+}

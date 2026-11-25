@@ -1,12 +1,10 @@
 import * as THREE from './vendor/three.module.min.js';
-import {HOME_MODELS} from './home-models.js';
 import {loadModelScene} from './home-scene.js';
 
 // One canvas/context for the entire page. Only the current model can animate.
 const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 const cache = new Map();
-let renderer, current = null, desired = null, pending = null, frame = 0, last = 0;
-const MODEL_LOAD_TIMEOUT_MS = 15000;
+let renderer, current = null, desired = null, frame = 0, last = 0;
 let lost = false, visible = true, renders = 0;
 const resizeObserver = new ResizeObserver(() => { if(current) { size(); draw(); } });
 const intersectionObserver = new IntersectionObserver(entries => {
@@ -24,7 +22,7 @@ function ensureRenderer() {
   renderer.domElement.setAttribute('aria-hidden','true');
   renderer.domElement.addEventListener('webglcontextlost', event => {
     event.preventDefault(); lost = true;
-    const request = desired; desired = null; cancelPending(); detach();
+    const request = desired; desired = null; detach();
     request?.onState?.('error');
   });
 }
@@ -71,23 +69,14 @@ function trimCache() {
     cache.delete(id); entry.dispose();
   }
 }
-function cancelPending() {
-  pending?.controller.abort();
-  pending = null;
-}
-async function loadRequest(request) {
-  const controller = new AbortController();
-  pending = {request, controller};
-  const timeout = setTimeout(() => controller.abort(new DOMException('Model loading timed out', 'TimeoutError')), MODEL_LOAD_TIMEOUT_MS);
+async function loadRequest(request, config, assets) {
   try {
     ensureRenderer();
     let entry = cache.get(request.id);
     if(!entry) {
-      const config = HOME_MODELS.find(m => m.id===request.id);
-      if(!config) throw new Error('Unknown model');
-      entry = await loadModelScene(config, {signal: controller.signal});
+      entry = await loadModelScene(config, assets);
       // A late result must not attach to a new host or repopulate a hidden page.
-      if(desired!==request || controller.signal.aborted) { entry.dispose(); return; }
+      if(desired!==request || assets.signal.aborted) { entry.dispose(); return; }
     }
     detach();
     cache.delete(request.id); cache.set(request.id,entry);
@@ -102,21 +91,17 @@ async function loadRequest(request) {
     if(desired!==request) return; // Leaving a card is cancellation, not a load error.
     desired = null; detach(); request.onState?.('error');
     console.warn('Model preview unavailable:',request.id,error.message);
-  } finally {
-    clearTimeout(timeout);
-    if(pending?.request===request) pending = null;
   }
 }
-export function show(host,id,onState) {
-  if(current?.host===host && current.id===id && !current.leaving) return;
-  cancelPending();
+export function hasScene(id) { return cache.has(id); }
+export function show(host,config,assets,onState) {
+  const {id} = config;
   desired = {host,id,onState};
   if(current) detach();
-  onState?.('loading'); void loadRequest(desired);
+  void loadRequest(desired,config,assets);
 }
 export function hide(immediate=false) {
   desired = null;
-  cancelPending();
   if(!current) return;
   if(immediate || reduced.matches || document.hidden) { detach(); return; }
   current.leaving = true;
@@ -144,4 +129,4 @@ export function status() {
 export function audit() { return current?.entry.audit(); }
 document.addEventListener('visibilitychange',() => { if(document.hidden) stop(); else { last=0; draw(); schedule(); } });
 reduced.addEventListener('change',() => { if(current) {current.rotating=false; current.amount=Number(current.light);draw();schedule();current.onState?.('ready');} });
-window.addEventListener('pagehide',() => {desired=null;cancelPending();detach();for(const entry of cache.values())entry.dispose();cache.clear();});
+window.addEventListener('pagehide',() => {desired=null;detach();for(const entry of cache.values())entry.dispose();cache.clear();});

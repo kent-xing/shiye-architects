@@ -46,7 +46,8 @@ button:disabled{cursor:default;opacity:.5}
 .model-card.is-active .model-caption,.model-card:focus-visible .model-caption{opacity:1;transform:none}
 @media(max-width:540px),(hover:none){.model-caption{opacity:1;transform:none}}
 .caption-title{font-size:clamp(.8125rem,1.17vw,1rem);font-weight:500;line-height:1.45;letter-spacing:.02em}
-.caption-type{font-size:clamp(.6875rem,.92vw,.75rem);color:var(--secondary);line-height:1.5;letter-spacing:.02em}
+.caption-type,.model-project-action{font-size:clamp(.6875rem,.92vw,.75rem);color:var(--secondary);line-height:1.5;letter-spacing:.02em}
+.model-project-action{text-decoration:underline;text-underline-offset:.18em}
 .home-gallery-divider{margin:0 3.6vw 24px;border-top:1px solid var(--line)}
 body.has-dialog{overflow:hidden}
 dialog{border:1px solid rgba(95,104,94,.18);padding:0;color:var(--ink);background-color:var(--stone-ground);background-image:var(--stone-image);background-position:center;background-size:cover;background-repeat:no-repeat;box-shadow:0 24px 100px rgba(40,48,40,.14)}

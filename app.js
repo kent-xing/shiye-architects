@@ -1,5 +1,6 @@
 import {aboutContent,aboutImages} from './about-content.js';
 import {projectContent} from './project-content.js';
+import {HOME_MODELS, fetchModelData, importModelLighting} from './home-models.js';
 
 const models = [
   {asset:'model-01',en:'Stacked volumes',zh:'叠合体量'},
@@ -21,7 +22,7 @@ Object.assign(words.zh,{
   back:'返回首页 ↗',projectsHeading:'项目',projectsEyebrow:'目录',
   projectsIntro:'建筑项目与空间研究示例。',journalHeading:'日志',
   previousPhoto:'上一张照片',nextPhoto:'下一张照片',photoThumbnails:'照片缩略图',
-  zoomPhoto:'放大照片',photoPreview:'照片预览',homeSample:'示例',
+  zoomPhoto:'放大照片',photoPreview:'照片预览',homeSample:'示例',viewProject:'查看项目 ↗',
   journalEyebrow:'观察与过程',journalIntro:'观察、手稿与设计过程。',
   journalEmpty:'内容整理中。',contactHeading:'联系',contactEyebrow:'交流与合作',
   news:'新闻',newsHeading:'新闻',newsEyebrow:'新闻与动态',newsEmpty:'内容整理中。'
@@ -30,13 +31,16 @@ Object.assign(words.en,{
   back:'Back to home ↗',projectsHeading:'Projects',projectsEyebrow:'CONTENTS',
   projectsIntro:'Built projects and illustrative model studies.',journalHeading:'Journal',
   previousPhoto:'Previous photo',nextPhoto:'Next photo',photoThumbnails:'Photo thumbnails',
-  zoomPhoto:'Enlarge photo',photoPreview:'Photo preview',homeSample:'Sample',
+  zoomPhoto:'Enlarge photo',photoPreview:'Photo preview',homeSample:'Sample',viewProject:'View project ↗',
   journalEyebrow:'OBSERVATIONS / PROCESS',journalIntro:'Observations, sketches and design process.',
   journalEmpty:'Content in preparation.',contactHeading:'Contact',contactEyebrow:'ENQUIRIES / COLLABORATION',
   news:'news',newsHeading:'News',newsEyebrow:'NEWS / UPDATES',newsEmpty:'Content in preparation.'
 });
 let language='zh', activeCard=null, detailIndex=0, currentPage='home';
+let touchPreview=false;
 let viewer=null, viewerPromise=null, requestId=0, detailState='idle';
+let modelLoad=null, warmModel=null;
+const MODEL_LOAD_TIMEOUT_MS=15000;
 let photoIndex = 0;
 let projectOpener = null;
 let projectClosedByPointer = false;
@@ -52,6 +56,11 @@ const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)');
 const fineHover=matchMedia('(hover: hover) and (pointer: fine)');
 const catalogHover = matchMedia('(min-width: 641px) and (any-hover: hover) and (any-pointer: fine)');
 const grid=document.querySelector('#model-grid');
+const touchPreviewVisibility = new IntersectionObserver(entries => {
+  if (touchPreview && entries.some(entry => entry.target === activeCard && !entry.isIntersecting)) {
+    deactivate(true);
+  }
+});
 const mainContent = document.querySelector('#main-content');
 const homeGallery = document.querySelector('.home-gallery');
 const siteHeader = document.querySelector('.site-header');
@@ -127,27 +136,127 @@ const labels={
   en:{loading:'Loading model…',error:'The model is unavailable. You can still browse the project.',on:'Turn lights off',off:'Turn lights on',static:'Static view',skip:'Skip to content'},
   zh:{loading:'模型载入中…',error:'模型暂时无法载入，仍可查看项目信息。',on:'关闭灯光',off:'开启灯光',static:'静态展示',skip:'跳至正文'}
 };
-async function showModel(host,id,onState){
-  const ticket=++requestId;
-  onState('loading');
-  try{
-    viewerPromise??=import('./home-viewer.js');
-    viewer=await viewerPromise;
-    if(ticket===requestId)viewer.show(host,id,onState);
-  }catch(error){if(ticket===requestId)onState('error');console.warn('3D preview unavailable:',error.message);}
+function loadViewer() {
+  if (!viewerPromise) {
+    // Start the known dependency branches together to avoid extra round trips.
+    import('./vendor/three.module.min.js').catch(() => {});
+    import('./vendor/GLTFLoader.js').catch(() => {});
+    import('./home-scene.js').catch(() => {});
+    viewerPromise = import('./home-viewer.js').then(module => viewer = module).catch(error => {
+      viewerPromise = null;
+      throw error;
+    });
+  }
+  return viewerPromise;
 }
-function stopModel(immediate=false){requestId++;viewer?.hide(immediate);}
-function activate(card){
-  if(homeGallery.hidden||activeCard===card||projectDialog.open)return;
-  deactivate(true);activeCard=card;card.classList.add('is-active');
+function abortWarmModel() {
+  if (!warmModel) return;
+  clearTimeout(warmModel.timeout);
+  warmModel.controller.abort();
+  warmModel = null;
+}
+function warmHomeModel() {
+  const connection = navigator.connection;
+  if (currentPage !== 'home' || activeCard || projectDialog.open || document.hidden ||
+      connection?.saveData || ['slow-2g', '2g'].includes(connection?.effectiveType)) return;
+  const first = grid.firstElementChild;
+  const bounds = first.getBoundingClientRect();
+  if (bounds.bottom <= 0 || bounds.top >= innerHeight) return;
+  const config = HOME_MODELS.find(model => model.id === first.dataset.model);
+  const controller = new AbortController();
+  const data = fetchModelData(config, {signal: controller.signal, priority: 'low'});
+  const timeout = setTimeout(() => controller.abort(), MODEL_LOAD_TIMEOUT_MS);
+  warmModel = {id: config.id, controller, data, timeout};
+  data.then(
+    () => clearTimeout(timeout),
+    () => { if (warmModel?.controller === controller) abortWarmModel(); }
+  );
+  importModelLighting(config).catch(() => {});
+  loadViewer().catch(() => {});
+}
+async function showModel(host,id,onState) {
+  const ticket = ++requestId;
+  onState('loading');
+  const config = HOME_MODELS.find(model => model.id === id);
+  const cached = viewer?.hasScene(id);
+  const warm = !cached && warmModel?.id === id ? warmModel : null;
+  if (warm) {
+    clearTimeout(warm.timeout);
+    warmModel = null;
+  } else abortWarmModel();
+  const controller = warm?.controller ?? new AbortController();
+  const {signal} = controller;
+  // Start the selected assets while the viewer's JavaScript is still loading.
+  const fetchSelected = () => fetchModelData(config, {signal, priority: 'high'});
+  const data = cached ? undefined : warm ? warm.data.catch(error => {
+    if (signal.aborted) throw error;
+    return fetchSelected();
+  }) : fetchSelected();
+  const lightingModule = cached ? undefined : importModelLighting(config);
+  data?.catch(() => {});
+  lightingModule?.catch(() => {});
+
+  function report(state) {
+    if (ticket !== requestId) return;
+    if (modelLoad?.controller === controller) {
+      clearTimeout(modelLoad.timeout);
+      modelLoad = null;
+    }
+    if (state === 'error') controller.abort();
+    onState(state);
+  }
+  const timeout = setTimeout(() => {
+    viewer?.hide(true);
+    report('error');
+  }, MODEL_LOAD_TIMEOUT_MS);
+  modelLoad = {controller, timeout};
+  try {
+    const modelViewer = await loadViewer();
+    if (ticket === requestId && !signal.aborted) {
+      modelViewer.show(host, config, {data, signal, lightingModule}, report);
+    }
+  } catch(error) {
+    report('error');
+    console.warn('3D preview unavailable:', error.message);
+  }
+}
+function stopModel(immediate=false) {
+  requestId++;
+  if (modelLoad) {
+    clearTimeout(modelLoad.timeout);
+    modelLoad.controller.abort();
+    modelLoad = null;
+  }
+  viewer?.hide(immediate);
+}
+function activate(card, fromTouch=false){
+  if(homeGallery.hidden||projectDialog.open||(activeCard===card&&touchPreview===fromTouch))return;
+  deactivate(true);
+  activeCard=card;
+  touchPreview=fromTouch;
+  card.classList.add('is-active');
+  if(touchPreview){
+    card.querySelector('.model-project-action').hidden=false;
+    touchPreviewVisibility.observe(card);
+  }
   showModel(card.querySelector('.model-object'),models[card.dataset.index].asset,state=>{
     card.dataset.modelState=state;
-    card.querySelector('.model-status').textContent=state==='error'?labels[language].error:'';
+    card.querySelector('.model-status').textContent=state==='error'||(fromTouch&&state==='loading')
+      ? labels[language][state] : '';
   });
 }
 function deactivate(immediate=false){
   if(!activeCard)return;
-  activeCard.classList.remove('is-active');activeCard=null;stopModel(immediate);
+  if(touchPreview){
+    touchPreviewVisibility.unobserve(activeCard);
+    activeCard.querySelector('.model-project-action').hidden=true;
+    activeCard.querySelector('.model-status').textContent='';
+    delete activeCard.dataset.modelState;
+  }
+  activeCard.classList.remove('is-active');
+  activeCard=null;
+  touchPreview=false;
+  stopModel(immediate);
 }
 // Models without their own project use the approved case as an example.
 const temporaryHomeProjectAsset = 'model-01';
@@ -165,13 +274,28 @@ models.forEach((model,index)=>{
   button.className='model-card';button.type='button';button.dataset.index=index;
   button.dataset.model = model.asset;
   button.setAttribute('aria-haspopup','dialog');
-  button.innerHTML=`<div class="model-stage"><div class="model-object"><img class="model-poster" src="${poster(model.asset)}" alt="" width="640" height="640" decoding="async" ${index>4?'loading="lazy"':''}></div></div><div class="model-caption"><span class="caption-title"></span><span class="caption-type"></span></div><span class="model-status" role="status"></span>`;
-  button.addEventListener('pointerenter',()=>{if(fineHover.matches)activate(button);});
-  button.addEventListener('pointerleave',()=>{if(activeCard===button&&!button.matches(':focus-visible'))deactivate();});
+  button.innerHTML=`<div class="model-stage"><div class="model-object"><img class="model-poster" src="${poster(model.asset)}" alt="" width="640" height="640" decoding="async" ${index>4?'loading="lazy"':''}></div></div>
+    <div class="model-caption"><span class="caption-title"></span><span class="caption-type"></span><span class="model-project-action" data-i18n="viewProject" hidden></span></div>
+    <span class="model-status" role="status"></span>`;
+  button.addEventListener('pointerenter',event=>{if(event.pointerType!=='touch'&&fineHover.matches)activate(button);});
+  button.addEventListener('pointerleave',()=>{if(!touchPreview&&activeCard===button&&!button.matches(':focus-visible'))deactivate();});
   button.addEventListener('focus',()=>{if(button.matches(':focus-visible'))activate(button);});
-  button.addEventListener('blur',()=>{if(activeCard===button)deactivate();});
+  button.addEventListener('blur',()=>{if(!touchPreview&&activeCard===button)deactivate();});
   const homeProjectIndex = projectContent[model.asset] ? index : temporaryHomeProjectIndex;
-  button.addEventListener('click',()=>openProject(homeProjectIndex, button));
+  // WebKit can report a tap's synthesized click as a mouse event.
+  let pressedPointerType;
+  button.addEventListener('pointerdown',event=>{pressedPointerType=event.pointerType;});
+  button.addEventListener('pointercancel',()=>{pressedPointerType=undefined;});
+  button.addEventListener('click',event=>{
+    const pointerType=pressedPointerType||event.pointerType;
+    pressedPointerType=undefined;
+    const fromTouch=event.detail>0&&(pointerType==='touch'||pointerType==='pen');
+    if(fromTouch&&(!touchPreview||activeCard!==button)){
+      activate(button,true);
+      return;
+    }
+    openProject(homeProjectIndex,button);
+  });
   grid.append(button);
   const projectButton=document.createElement('button');
   projectButton.className='project-index-card';projectButton.type='button';projectButton.dataset.index=index;
@@ -552,6 +676,7 @@ function loadDetail(index) {
 function openProject(index, trigger){
   if(currentPage!=='home'&&currentPage!=='projects')return;
   cancelCatalogSlide();
+  abortWarmModel();
   deactivate(true);
   if(!projectDialog.open){
     projectOpener = trigger;
@@ -704,6 +829,7 @@ function showPage(){
   const saved=returnIndex>=0?readProjectReturn(returnAsset):null;
   currentPage=returnIndex>=0?(saved?.page==='projects'?'projects':'home'):route==='about-contact'?'about':Object.hasOwn(pageSections,route)?route:'home';
   deactivate(true);stopModel(true);
+  if (currentPage !== 'home') abortWarmModel();
   if(photoPreview.open)photoPreview.close();
   if(projectDialog.open){
     projectOpener = null;
@@ -817,7 +943,10 @@ function setLanguage(next){
     card.querySelector('.caption-title').textContent = title;
     card.querySelector('.caption-type').textContent = project?.subtitle ?? sample;
     card.setAttribute('aria-label', project?.title ?? `${title} · ${sample} ${pad(index+1)}`);
-    if(card.dataset.modelState==='error')card.querySelector('.model-status').textContent=labels[language].error;
+    const state=card.dataset.modelState;
+    if(state==='error'||(state==='loading'&&touchPreview&&activeCard===card)){
+      card.querySelector('.model-status').textContent=labels[language][state];
+    }
   });
   renderProjectCatalog();
   for (const toggle of languageToggles) {
@@ -834,9 +963,18 @@ function setLanguage(next){
 for (const toggle of languageToggles) {
   toggle.addEventListener('click',()=>setLanguage(language==='en'?'zh':'en'));
 }
-document.addEventListener('visibilitychange',()=>{if(document.hidden)deactivate(true);});
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden) { abortWarmModel(); deactivate(true); }
+});
+window.addEventListener('pagehide',()=>{ abortWarmModel(); stopModel(true); });
 reduceMotion.addEventListener('change',()=>updateControls());
 setLanguage('zh');
 showPage();
+function queueModelWarmup() {
+  if (window.requestIdleCallback) requestIdleCallback(warmHomeModel, {timeout: 1000});
+  else setTimeout(warmHomeModel, 250);
+}
+if (document.readyState === 'complete') queueModelWarmup();
+else window.addEventListener('load', queueModelWarmup, {once:true});
 // Read-only diagnostics for local verification. No alternate geometry or light path.
 window.__homeStudy={models,diagnostics:()=>viewer?.status()??{contextCount:0,active:false},audit:()=>viewer?.audit()};

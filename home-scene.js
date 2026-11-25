@@ -1,5 +1,6 @@
 import * as THREE from './vendor/three.module.min.js';
 import { GLTFLoader } from './vendor/GLTFLoader.js';
+import {fetchModelData, importModelLighting} from './home-models.js';
 
 // Model 11 has platform/plinth faces exactly coincident with perimeter walls.
 // Resolve their depth tie on runtime copies; keep all accepted vertices intact.
@@ -11,9 +12,8 @@ const MODEL11_RECESSED_SURFACES = new Set([
 
 // The acceptance files remain the source of geometry and window selection.
 // This adapter owns runtime copies only. It never recentres or deforms a model.
-export async function loadModelScene(config, {signal} = {}) {
+export async function loadModelScene(config, {signal, data, lightingModule = importModelLighting(config)} = {}) {
   const sourceURL = new URL(config.source, import.meta.url).href;
-  const moduleURL = new URL(config.lightingModule, import.meta.url).href;
   const resources = { geometries: new Set(), materials: new Set(), textures: new Set() };
   let model, lighting, keyLight, disposed = false;
 
@@ -62,15 +62,12 @@ export async function loadModelScene(config, {signal} = {}) {
   }
 
   try {
-    checkAbort();
-    const lightingModule = import(moduleURL);
     // Observe early rejection while the GLB fetch/parse is still in progress.
     lightingModule.catch(() => {});
-    const response = await fetch(sourceURL, {signal});
-    if (!response.ok) throw new Error(`Model request failed: HTTP ${response.status}`);
-    const data = await response.arrayBuffer();
     checkAbort();
-    const gltf = await new GLTFLoader().parseAsync(data, new URL('.', sourceURL).href);
+    const buffer = await (data ?? fetchModelData(config, {signal}));
+    checkAbort();
+    const gltf = await new GLTFLoader().parseAsync(buffer, new URL('.', sourceURL).href);
     remember(gltf.scene);
     checkAbort();
     const { createWindowLighting, WINDOW_PANES, LIGHTING_DEFAULTS } = await waitForModule(lightingModule);
